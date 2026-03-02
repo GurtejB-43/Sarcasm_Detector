@@ -63,7 +63,7 @@ class SarcasmDataset(Dataset):
         return {
             "input_ids": encoding["input_ids"].flatten(),
             "attention_mask": encoding["attention_mask"].flatten(),
-            "label": torch.tensor([label], dtype=torch.long)
+            "label": torch.tensor(label, dtype=torch.long)
         }
         
 
@@ -128,11 +128,10 @@ def train_loop(
         
         for batch in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             # Move batch components to device
-            # use .squeeze() on the labels because CrossEntropyLoss 
             # expects a 1D tensor of shape (batch_size,) but Dataset returns shape (batch_size, 1).
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
-            labels = batch["label"].to(device).squeeze(-1)
+            labels = batch["label"].to(device)
             
             # Clear previous gradients
             optimizer.zero_grad()
@@ -147,6 +146,11 @@ def train_loop(
             
             # accumulate the loss for tracking
             epoch_loss += loss.item()
+    
+        # Calculate the average loss for this epoch and append it to the history list
+        avg_loss = epoch_loss / len(dataloader)
+        loss_history.append(avg_loss)
+        print(f"Epoch {epoch+1}/{epochs} - Loss: {avg_loss:.4f}")
         
     return loss_history
 
